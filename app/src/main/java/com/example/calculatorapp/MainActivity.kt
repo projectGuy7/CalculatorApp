@@ -6,8 +6,10 @@ import androidx.compose.ui.unit.sp
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,11 +31,14 @@ import com.example.calculatorapp.ui.theme.CalculatorAppTheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -53,7 +58,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-val buttonSize = 85.dp
 val buttonPadding = 2.dp
 
 @Composable
@@ -61,16 +65,25 @@ fun App() {
     var firstTerm: String? by remember { mutableStateOf(null) }
     var secondTerm: String? by remember { mutableStateOf(null) }
     var operand: String? by remember { mutableStateOf(null) }
+    val result: String = (firstTerm?:"0")
+                            .plus(operand?:"")
+                            .plus(secondTerm?:"")
 
     val numberPressed : (String) -> Unit = { digit ->
-        if(firstTerm == null) {
-            firstTerm = digit
-        } else if(operand == null) {
-            firstTerm += digit
-        } else if(secondTerm == null) {
-            secondTerm = digit
-        } else {
-            secondTerm += digit
+        if((digit != "0" || result != "0") &&
+            !(digit == "0" && secondTerm == null && operand == "/") &&
+            !(digit == "0" && secondTerm == "0")
+            )
+        {
+            if(firstTerm == null) {
+                firstTerm = digit
+            } else if(operand == null) {
+                firstTerm += digit
+            } else if(secondTerm == null) {
+                secondTerm = digit
+            } else {
+                secondTerm += digit
+            }
         }
     }
 
@@ -80,7 +93,7 @@ fun App() {
         }
     }
 
-    val backspaceIsClicked : () -> Unit = { // TODO: Fix the logic
+    val backspaceIsClicked : (String) -> Unit = { // TODO: Fix the logic
         if(secondTerm != null) {
             secondTerm = if(secondTerm!!.length == 1) {
                 null
@@ -98,64 +111,161 @@ fun App() {
         }
     }
 
-    val equalsPressed : () -> Unit = {
+    val equalsPressed : (String) -> Unit = {
         if(firstTerm != null && operand != null && secondTerm != null) {
             firstTerm = when(operand) {
                 "+" -> "${firstTerm!!.toInt() + secondTerm!!.toInt()}"
                 "-" -> "${firstTerm!!.toInt() - secondTerm!!.toInt()}"
                 "*" -> "${firstTerm!!.toInt() * secondTerm!!.toInt()}"
-                ":" -> "${firstTerm!!.toInt() / secondTerm!!.toInt()}"
+                "/" -> "${firstTerm!!.toInt() / secondTerm!!.toInt()}"
                 else -> "Error"
             }
+            firstTerm = if(firstTerm == "0") null else firstTerm
             operand = null
             secondTerm = null
         }
     }
 
     Column() {
-        Row() {
-            Spacer(modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f))
-            Text(
-                modifier = Modifier.padding(10.dp),
-                text = "123",//firstTerm?.plus(operand)?.plus(secondTerm)?:""
-                fontFamily = FontFamily(Font(R.font.sevensegment)),
-                fontSize = 18.em
-            )
-        }
-        var n = 1
-        Column(
-            modifier = Modifier.fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+        BoxWithConstraints (
+            modifier = Modifier.weight(1f)
         ) {
-            for (i in 0..2) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                )
-                {
-                    for (j in 0..2) {
-                        CustomButton(
-                            modifier = Modifier
-                                .size(width = buttonSize, height = buttonSize)
-                                .padding(buttonPadding),
-                            onClick = numberPressed,
-                            text = "${n++}",
-                            shape = RoundedCornerShape(15.dp)
-                        )
-                    }
+            val boxWithConstraintsScope = this
+            Row() {
+                Spacer(modifier = Modifier.weight(1f))
+                Column(
+                    modifier = Modifier.padding(end = 10.dp)
+                ) {
+                    Text(
+                        modifier = Modifier,
+                        text = result,
+                        fontFamily = FontFamily(Font(R.font.sevensegment)),
+                        fontSize = 18.em
+                    )
+                    Text(
+                        modifier = Modifier.alpha(0.5f),
+                        text = result,
+                        fontFamily = FontFamily(Font(R.font.sevensegment)),
+                        fontSize = 18.em
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(3f)
+        ) {
+            CustomButton(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(0.5f)
+                    .padding(buttonPadding),
+                onClick = backspaceIsClicked, // TODO !!!
+                text = "<",
+                shape = RoundedCornerShape(15.dp)
+            )
+            Row(
+                modifier = Modifier.weight(1f)
+            ) {
+                for(i in 7..9) {
                     CustomButton(
                         modifier = Modifier
-                            .size(width = buttonSize, height = buttonSize)
+                            .fillMaxHeight()
+                            .weight(1f)
                             .padding(buttonPadding),
                         onClick = numberPressed,
-                        text = "${n++}",
+                        text = "$i",
                         shape = RoundedCornerShape(15.dp)
                     )
                 }
+                CustomButton(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .padding(buttonPadding),
+                    onClick = operandChosen,
+                    text = "+",
+                    shape = RoundedCornerShape(15.dp)
+                )
+            }
+            Row(
+                modifier = Modifier.weight(1f)
+            ) {
+                for(i in 4..6) {
+                    CustomButton(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(1f)
+                            .padding(buttonPadding),
+                        onClick = numberPressed,
+                        text = "$i",
+                        shape = RoundedCornerShape(15.dp)
+                    )
+                }
+                CustomButton(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .padding(buttonPadding),
+                    onClick = operandChosen,
+                    text = "-",
+                    shape = RoundedCornerShape(15.dp)
+                )
+            }
+            Row(
+                modifier = Modifier.weight(1f)
+            ) {
+                for(i in 1..3) {
+                    CustomButton(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(1f)
+                            .padding(buttonPadding),
+                        onClick = numberPressed,
+                        text = "$i",
+                        shape = RoundedCornerShape(15.dp)
+                    )
+                }
+                CustomButton(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .padding(buttonPadding),
+                    onClick = operandChosen,
+                    text = "*",
+                    shape = RoundedCornerShape(15.dp)
+                )
+            }
+            Row(
+                modifier = Modifier.weight(1f)
+            ) {
+                CustomButton(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .padding(buttonPadding),
+                    onClick = numberPressed,
+                    text = "0",
+                    shape = RoundedCornerShape(15.dp)
+                )
+                CustomButton(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(2f)
+                        .padding(buttonPadding),
+                    onClick = equalsPressed,
+                    text = "=",
+                    shape = RoundedCornerShape(15.dp)
+                )
+                CustomButton(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .padding(buttonPadding),
+                    onClick = operandChosen,
+                    text = "/",
+                    shape = RoundedCornerShape(15.dp)
+                )
             }
         }
     }
