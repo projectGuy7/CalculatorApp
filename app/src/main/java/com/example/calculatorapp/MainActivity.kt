@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import kotlin.properties.Delegates
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +53,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CalculatorAppTheme {
-                App()
+                Scaffold { innerPadding ->
+                    App(modifier = Modifier.padding(innerPadding))
+                }
             }
         }
     }
@@ -61,13 +64,24 @@ class MainActivity : ComponentActivity() {
 val buttonPadding = 2.dp
 
 @Composable
-fun App() {
+fun App(modifier: Modifier) {
     var firstTerm: String? by remember { mutableStateOf(null) }
     var secondTerm: String? by remember { mutableStateOf(null) }
     var operand: String? by remember { mutableStateOf(null) }
     val result: String = (firstTerm?:"0")
                             .plus(operand?:"")
                             .plus(secondTerm?:"")
+    var resultPreview : String = if(firstTerm != null && operand != null && secondTerm != null) {
+        when(operand) {
+            "+" -> "${firstTerm!!.toInt() + secondTerm!!.toInt()}"
+            "-" -> "${firstTerm!!.toInt() - secondTerm!!.toInt()}"
+            "*" -> "${firstTerm!!.toInt() * secondTerm!!.toInt()}"
+            "/" -> "${firstTerm!!.toInt() / secondTerm!!.toInt()}"
+            else -> "Error"
+        }
+    } else {
+        ""
+    }
 
     val numberPressed : (String) -> Unit = { digit ->
         if((digit != "0" || result != "0") &&
@@ -84,12 +98,6 @@ fun App() {
             } else {
                 secondTerm += digit
             }
-        }
-    }
-
-    val operandChosen : (String) -> Unit = { oper ->
-        if(firstTerm != null && secondTerm == null) {
-            operand = oper
         }
     }
 
@@ -126,15 +134,27 @@ fun App() {
         }
     }
 
-    Column() {
-        BoxWithConstraints (
+    val operandChosen : (String) -> Unit = { oper ->
+        if(secondTerm != null) {
+            equalsPressed("")
+            operand = oper
+        } else if(firstTerm != null && secondTerm == null) {
+            operand = oper
+        }
+    }
+
+    Column(
+        modifier
+    ) {
+        Row(
             modifier = Modifier.weight(1f)
         ) {
-            val boxWithConstraintsScope = this
-            Row() {
-                Spacer(modifier = Modifier.weight(1f))
+            Column(
+                modifier = Modifier.padding(end = 10.dp)
+            ) {
                 Column(
-                    modifier = Modifier.padding(end = 10.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End
                 ) {
                     Text(
                         modifier = Modifier,
@@ -144,7 +164,7 @@ fun App() {
                     )
                     Text(
                         modifier = Modifier.alpha(0.5f),
-                        text = result,
+                        text = resultPreview,
                         fontFamily = FontFamily(Font(R.font.sevensegment)),
                         fontSize = 18.em
                     )
@@ -152,15 +172,25 @@ fun App() {
             }
         }
 
+        val smallButtonModifier = Modifier
+            .fillMaxHeight()
+            .weight(1f)
+            .padding(buttonPadding)
+        val equalsButtonModifier = Modifier
+            .fillMaxHeight()
+            .weight(2f)
+            .padding(buttonPadding)
+        val deleteButtonModifier = Modifier
+            .fillMaxSize()
+            .weight(0.5f)
+            .padding(buttonPadding)
+
         Column(
             modifier = Modifier.weight(3f)
         ) {
             CustomButton(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(0.5f)
-                    .padding(buttonPadding),
-                onClick = backspaceIsClicked, // TODO !!!
+                modifier = deleteButtonModifier,
+                onClick = backspaceIsClicked,
                 text = "<",
                 shape = RoundedCornerShape(15.dp)
             )
@@ -169,20 +199,14 @@ fun App() {
             ) {
                 for(i in 7..9) {
                     CustomButton(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(1f)
-                            .padding(buttonPadding),
+                        modifier = smallButtonModifier,
                         onClick = numberPressed,
                         text = "$i",
                         shape = RoundedCornerShape(15.dp)
                     )
                 }
                 CustomButton(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .padding(buttonPadding),
+                    modifier = smallButtonModifier,
                     onClick = operandChosen,
                     text = "+",
                     shape = RoundedCornerShape(15.dp)
@@ -193,20 +217,14 @@ fun App() {
             ) {
                 for(i in 4..6) {
                     CustomButton(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(1f)
-                            .padding(buttonPadding),
+                        modifier = smallButtonModifier,
                         onClick = numberPressed,
                         text = "$i",
                         shape = RoundedCornerShape(15.dp)
                     )
                 }
                 CustomButton(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .padding(buttonPadding),
+                    modifier = smallButtonModifier,
                     onClick = operandChosen,
                     text = "-",
                     shape = RoundedCornerShape(15.dp)
@@ -217,20 +235,14 @@ fun App() {
             ) {
                 for(i in 1..3) {
                     CustomButton(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(1f)
-                            .padding(buttonPadding),
+                        modifier = smallButtonModifier,
                         onClick = numberPressed,
                         text = "$i",
                         shape = RoundedCornerShape(15.dp)
                     )
                 }
                 CustomButton(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .padding(buttonPadding),
+                    modifier = smallButtonModifier,
                     onClick = operandChosen,
                     text = "*",
                     shape = RoundedCornerShape(15.dp)
@@ -240,28 +252,19 @@ fun App() {
                 modifier = Modifier.weight(1f)
             ) {
                 CustomButton(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .padding(buttonPadding),
+                    modifier = smallButtonModifier,
                     onClick = numberPressed,
                     text = "0",
                     shape = RoundedCornerShape(15.dp)
                 )
                 CustomButton(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(2f)
-                        .padding(buttonPadding),
+                    modifier = equalsButtonModifier,
                     onClick = equalsPressed,
                     text = "=",
                     shape = RoundedCornerShape(15.dp)
                 )
                 CustomButton(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f)
-                        .padding(buttonPadding),
+                    modifier = smallButtonModifier,
                     onClick = operandChosen,
                     text = "/",
                     shape = RoundedCornerShape(15.dp)
@@ -298,7 +301,7 @@ fun CustomButton(
 @Preview(showBackground = true, widthDp = 360, heightDp = 806)
 @Composable
 fun AppPreview() {
-    App()
+    App(modifier = Modifier)
 }
 
 @Preview
